@@ -1,19 +1,30 @@
 from pymongo import MongoClient
 from flask import Flask,jsonify,request
 import json
+from dataclasses import dataclass
+from marshmallow import Schema,fields,ValidationError,validate
 
 app = Flask(__name__)
+
+    
 client  = MongoClient('localhost',27017)
 db = client.students
 collection = db.studentsinfo
 
+class Student_class(Schema):
+    name = fields.Str(required=True,validate= validate.length(min=4))
+    noll = fields.Int(required=True)
+    class_stud = fields.Int(required=True)
+    
+
 @app.route('/')
 def into():
-    list1 = '''To view data you to go for /view,
-             To insert data you to go for /insert (post method),
-             To find data you to go for /find'
-             To delete data you to go for /delete'''
-    return jsonify(list1)
+    with app.app_context():
+        list1 = '''To view data you to go for /view,
+                To insert data you to go for /insert (post method),
+                To find data you to go for /find'
+                To delete data you to go for /delete'''
+        return jsonify(list1)
     
 @app.route("/view/") # to view the entire student data 
 def student_view():
@@ -34,16 +45,22 @@ def insert():
         val = (request.get_data())
         val = (val.decode('utf-8'))
         val = json.loads(val)
-        dict_insert = { "Name":val['Name'],
-                        "Roll":val['Roll'],
-                        "class":val['class']
+        student = Student_class()
+        try:
+            result = student.load(val)
+            dict_insert = { "name":student.Name,
+                        "roll":student.Roll,
+                        "class":student.class_stu
                         }
-        dd = collection.insert_one(dict_insert)
-        if dd.acknowledged:
-            return jsonify("Data is inserted successfully")
-        else:
-            return jsonify("Data is not inserted successfully")
-    
+            dd = collection.insert_one(dict_insert)
+            if dd.acknowledged:
+                return jsonify("Data is inserted successfully")
+            else:
+                return jsonify("Data is not inserted successfully")
+        
+        except ValidationError as err:
+            return(err.message)
+        
     except Exception as ex:
         return jsonify('The format of data that you are inserted mightbe wrong')
 
