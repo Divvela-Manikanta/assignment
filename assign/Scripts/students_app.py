@@ -44,14 +44,14 @@ def insert():
     try:
         try:
             val = (request.get_data())
-            val = (val.decode('utf-8'))
-            val = json.loads(val)
+            # val = (val.decode('utf-8'))
+            # val = json.loads(val)
             student = Student_class()
 
-            result = student.load(val)
-            dict_insert = { "name":val['name'],
-                        "roll":val['roll'],
-                        "class_stu":val['class_stud']
+            result = student.loads(val)
+            dict_insert = { "name":val[0],
+                        "roll":val[1],
+                        "class_stu":val[2]
                         }
             dd = collection.insert_one(dict_insert)
             if dd.acknowledged:
