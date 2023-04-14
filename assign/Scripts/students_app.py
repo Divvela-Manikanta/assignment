@@ -12,8 +12,8 @@ db = client.students
 collection = db.studentsinfo
 
 class Student_class(Schema):
-    name = fields.Str(required=True,validate= validate.length(min=4))
-    noll = fields.Int(required=True)
+    name = fields.Str(required=True,validate= validate.Length(min=4))
+    roll = fields.Int(required=True)
     class_stud = fields.Int(required=True)
     
 
@@ -42,22 +42,23 @@ def student_view():
 @app.route('/insert',methods =['POST']) # to insert the  student data 
 def insert():
     try:
-        val = (request.get_data())
-        val = (val.decode('utf-8'))
-        val = json.loads(val)
-        student = Student_class()
         try:
+            val = (request.get_data())
+            val = (val.decode('utf-8'))
+            val = json.loads(val)
+            student = Student_class()
+
             result = student.load(val)
-            dict_insert = { "name":student.Name,
-                        "roll":student.Roll,
-                        "class":student.class_stu
+            dict_insert = { "name":val['name'],
+                        "roll":val['roll'],
+                        "class_stu":val['class_stud']
                         }
             dd = collection.insert_one(dict_insert)
             if dd.acknowledged:
                 return jsonify("Data is inserted successfully")
             else:
                 return jsonify("Data is not inserted successfully")
-        
+
         except ValidationError as err:
             return(err.message)
         
