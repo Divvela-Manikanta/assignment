@@ -3,6 +3,7 @@ from flask import Flask,jsonify,request
 import json
 from dataclasses import dataclass
 from marshmallow import Schema,fields,ValidationError,validate
+from dataclasses import dataclass
 
 app = Flask(__name__)
 
@@ -11,12 +12,15 @@ client  = MongoClient('localhost',27017)
 db = client.students
 collection = db.studentsinfo
 
-class Student_class(Schema):
+class StudentClass(Schema):
     name = fields.Str(required=True,validate= validate.Length(min=4))
     roll = fields.Int(required=True)
-    class_stud = fields.Int(required=True)
-    
+    stranded = fields.Int(required=True)
 
+@dataclass
+class DataToStore:
+    deleteitem : str = None
+    
 @app.route('/')
 def into():
     with app.app_context():
@@ -41,38 +45,37 @@ def student_view():
 
 @app.route('/insert',methods =['POST']) # to insert the  student data 
 def insert():
+   
     try:
-        try:
-            val = (request.get_data())
-            # val = (val.decode('utf-8'))
-            # val = json.loads(val)
-            student = Student_class()
+        val = (request.get_data())
+        # val = (val.decode('utf-8'))
+        # val = json.loads(val)
+        student = StudentClass()
 
-            result = student.loads(val)
-            dict_insert = { "name":val[0],
-                        "roll":val[1],
-                        "class_stu":val[2]
-                        }
-            dd = collection.insert_one(dict_insert)
-            if dd.acknowledged:
-                return jsonify("Data is inserted successfully")
-            else:
-                return jsonify("Data is not inserted successfully")
-
-        except ValidationError as err:
-            return(err.message)
+        result = student.loads(val)
         
-    except Exception as ex:
-        return jsonify('The format of data that you are inserted mightbe wrong')
+        dict_insert = { "name":result['name'],
+                    "roll":result['roll'],
+                    "stranded":result['stranded']
+                    }
+        dd = collection.insert_one(dict_insert)
+        if dd.acknowledged:
+            return jsonify("Data is inserted successfully")
+        else:
+            return jsonify("Data is not inserted successfully")
 
-@app.route('/find/<data>') # to find the sngle student data 
+    except ValidationError as err:
+        return(err.messages)
+        
+
+@app.route('/find/<int:data>') # to find the sngle student data 
 def find(data):
-    val = collection.find_one({'Roll':data})
+    # projection = {"name":1,"roll":1,"class_stu":1}
+    val = collection.find_one({'roll':data},{'_id':0})
     if val != None:
-        del val['_id']
         return jsonify(val)
     else:
-        return jsonify(f"The student with roll number {data} is not found in data base")
+        return (f"The student with roll number {data} is not found in data base")
 
 @app.route('/delete',methods =['POST']) # to delete the entire student data 
 def delete():
@@ -80,14 +83,15 @@ def delete():
         val = (request.get_data())
         val = (val.decode('utf-8'))
         val = json.loads(val)
-        val = collection.find_one({'Roll':val['Roll']})
+        value  = DataToStore(val['roll'])
+        val = collection.find_one({'roll':value.deleteitem})
         if val != None:
-            collection.delete_one({'Roll':val['Roll']})
-            return jsonify(f"The student info with roll number {val['Roll']} is deleted from the data base.")
+            collection.delete_one({'roll':value.deleteitem})
+            return jsonify(f"The student info with roll number {value.deleteitem} is deleted from the data base.")
         else:
-            return jsonify(f"Unable to datele the student info with roll number {val['Roll']}.The student might be not available")
+            return jsonify(f"Unable to datele the student info with roll number {value.deleteitem}.The student might be not available")
     except Exception as ex:
-        return jsonify("the entred roll number has to be in string format and data has to be gven in the json 'Roll':...")
+        return jsonify("the entred roll number has to be in string format and data has to be gven in the json 'roll':...")
 
 
 if __name__ =='__main__':
