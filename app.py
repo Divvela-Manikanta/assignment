@@ -7,7 +7,7 @@ import json
 app = Flask(__name__)
 
  
-@app.route('/')
+@app.get('/')
 def into():
     with app.app_context():
         list1 = '''To view data you to go for /view,
